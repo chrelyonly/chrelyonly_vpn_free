@@ -19,7 +19,7 @@ class VpnManager(private val vpnService: VpnService) {
         return try {
             vpnInterface = vpnService.Builder()
                 .setSession(SESSION_NAME)
-                .setMtu(9000)
+                .setMtu(1500)
                 .addAddress("172.19.0.1", 24)
                 .addRoute("0.0.0.0", 0)
                 .addDnsServer("223.5.5.5")

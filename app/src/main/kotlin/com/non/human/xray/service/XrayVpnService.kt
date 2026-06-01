@@ -9,12 +9,12 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
+import cn.hutool.http.HttpRequest
 import com.non.human.xray.core.common.CommonUtils
 import com.non.human.xray.core.core.CoreProcessManager
 import com.non.human.xray.core.vpn.TunManager
 import com.non.human.xray.core.vpn.VpnManager
 import com.non.human.xray.core.xray.XrayConfigBuilder
-import cn.hutool.http.HttpRequest
 import java.io.File
 import java.net.ConnectException
 import java.net.SocketTimeoutException
@@ -112,7 +112,6 @@ class XrayVpnService : VpnService() {
             val configJson = xrayConfigBuilder.buildXrayConfig(outboundJson)
             val configFile = currentConfigFile()
             configFile.writeText(configJson)
-
             commonUtils.sendEventLog("VPN_Core", "正在启动 xray 内核")
 //            启动内核
             coreProcessManager.startCoreProcess(

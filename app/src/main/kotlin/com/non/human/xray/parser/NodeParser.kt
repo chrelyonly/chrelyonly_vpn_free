@@ -418,7 +418,7 @@ object NodeParser {
             stream.put(
                 "tlsSettings",
                 JSONObject()
-                    .put("allowInsecure", true)
+                    .put("allowInsecure", false)
                     .put("fingerprint", fingerprint ?: "chrome")
                     .apply {
                         if (!sni.isNullOrBlank()) put("serverName", sni)

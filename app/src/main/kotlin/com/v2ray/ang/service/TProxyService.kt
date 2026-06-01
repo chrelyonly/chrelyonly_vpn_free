@@ -68,7 +68,7 @@ class TProxyService(
     private fun buildConfig(): String {
         return """
 tunnel:
-  mtu: 9000
+  mtu: 1500
   ipv4: 172.19.0.1
 socks5:
   address: 127.0.0.1
