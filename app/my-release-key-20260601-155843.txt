@@ -1,0 +1,22 @@
+===================================================
+APK签名证书信息
+===================================================
+
+证书信息：
+---------------------------------------------------
+Keystore 路径: build/my-release-key-20260601-155843.jks
+Key Alias: com.non.human
+Keystore 密码: com.non.human
+Key 密码: com.non.human
+
+证书详情：
+序列号: 1780300723462655900
+主题: CN=com.non.human,OU=com.non.human,O=com.non.human,ST=com.non.human,C=com.non.human
+颁发者: CN=com.non.human,OU=com.non.human,O=com.non.human,ST=com.non.human,C=com.non.human
+有效期: 2026-06-01 07:58:43 至 2051-06-01 07:58:43
+
+证书指纹：
+MD5: c3d643aac19391cc7d769297b70cd792
+SHA1: cce6aff5641a007d91697eba441f91e33179dea7
+SHA256: a1975d97c517b6b2ab116fdb70d79f01d68cee07d9f45b075418d448c92fa84c
+===================================================
