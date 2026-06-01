@@ -32,20 +32,18 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import cn.hutool.http.HttpRequest
 import com.non.human.xray.data.OutboundNode
 import com.non.human.xray.data.Subscription
 import com.non.human.xray.parser.SubscriptionParser
 import com.non.human.xray.service.XrayVpnService
 import com.non.human.xray.store.AppRepository
-import java.net.HttpURLConnection
-import java.net.URL
 
 class MainActivity : AppCompatActivity() {
     private lateinit var repository: AppRepository
     private lateinit var content: FrameLayout
     private lateinit var homeButton: Button
     private lateinit var nodesButton: Button
-    private lateinit var subscriptionsButton: Button
 
     private var selectedTab = 0
     private var activePageView: View? = null
@@ -86,8 +84,7 @@ class MainActivity : AppCompatActivity() {
         buildRoot()
         registerAppReceiver(statusReceiver, IntentFilter(ACTION_STATUS))
         render()
-
-
+        autoUpdateBuiltInSubscription()
     }
 
 
@@ -136,10 +133,8 @@ class MainActivity : AppCompatActivity() {
         }
         homeButton = navButton("首页", TAB_HOME)
         nodesButton = navButton("节点", TAB_NODES)
-        subscriptionsButton = navButton("订阅", TAB_SUBSCRIPTIONS)
         nav.addView(homeButton)
         nav.addView(nodesButton)
-        nav.addView(subscriptionsButton)
 
         val navWrap = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -212,7 +207,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun switchTab(tab: Int, refreshTarget: Boolean = false) {
-        if (tab !in TAB_HOME..TAB_SUBSCRIPTIONS) return
+        if (tab !in TAB_HOME..TAB_NODES) return
         if (tab == selectedTab) {
             render(forceRebuild = refreshTarget)
             return
@@ -259,7 +254,6 @@ class MainActivity : AppCompatActivity() {
     private fun buildPage(tab: Int): View {
         return when (tab) {
             TAB_NODES -> nodesPage()
-            TAB_SUBSCRIPTIONS -> subscriptionsPage()
             else -> homePage()
         }
     }
@@ -338,7 +332,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateNavState() {
-        listOf(homeButton to TAB_HOME, nodesButton to TAB_NODES, subscriptionsButton to TAB_SUBSCRIPTIONS)
+        listOf(homeButton to TAB_HOME, nodesButton to TAB_NODES)
             .forEach { (button, tab) ->
                 val selected = selectedTab == tab
                 button.setTextColor(if (selected) COLOR_BRAND else COLOR_SOFT_TEXT)
@@ -410,7 +404,7 @@ class MainActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams(dp(9), dp(9)).apply { marginEnd = dp(8) },
                 )
                 addView(
-                    label(if (currentStatus.vpn) "莓莓隧道运行中" else "莓莓隧道待启动", 18f, true, COLOR_INK, maxLines = 1),
+                    label(if (currentStatus.vpn) "隧道运行中" else "隧道待启动", 18f, true, COLOR_INK, maxLines = 1),
                     LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
                 )
                 addView(
@@ -549,12 +543,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         return scroll(horizontal = 14, top = 12, bottom = 24) {
-            addView(pageTitle("节点调度台"))
+            addView(pageTitle("列表"))
             addGap(8)
 
             if (subscription == null) {
-                addView(emptyPanel("还没有灵卷", "先导入订阅，之后就能在这里管理节点。", "打开订阅中心") {
-                    switchTab(TAB_SUBSCRIPTIONS)
+                addView(emptyPanel("还没有灵卷", "正在使用内置订阅，更新后会自动解析节点。", "更新内置订阅") {
+                    autoUpdateBuiltInSubscription()
                 })
                 return@scroll
             }
@@ -898,7 +892,7 @@ class MainActivity : AppCompatActivity() {
         val node = repository.selectedNode
         if (node == null) {
             toast("请先导入订阅并选择节点")
-            switchTab(TAB_SUBSCRIPTIONS)
+            autoUpdateBuiltInSubscription()
             return
         }
         val permissionIntent = VpnService.prepare(this)
@@ -977,30 +971,61 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun fetchAndStoreSubscription(name: String, url: String) {
-        toast("正在更新订阅...")
+    private fun autoUpdateBuiltInSubscription() {
+        fetchAndStoreSubscription(
+            BUILT_IN_SUBSCRIPTION_NAME,
+            BUILT_IN_SUBSCRIPTION_URL,
+            switchToNodesOnSuccess = false,
+            startMessage = "正在自动更新内置订阅...",
+            successPrefix = "内置订阅已更新",
+            failurePrefix = "内置订阅更新失败",
+        )
+    }
+
+    private fun fetchAndStoreSubscription(
+        name: String,
+        url: String,
+        switchToNodesOnSuccess: Boolean = true,
+        startMessage: String = "正在更新订阅...",
+        successPrefix: String = "已更新",
+        failurePrefix: String = "更新失败",
+    ) {
+        toast(startMessage)
+
         Thread {
             val result = runCatching {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 12000
-                connection.readTimeout = 18000
-                connection.requestMethod = "GET"
-                connection.setRequestProperty("User-Agent", "XrayPlusNative/1.0")
-                connection.inputStream.bufferedReader().use { it.readText() }
+                HttpRequest.get(url)
+                    .timeout(5000) // 连接+读取超时
+                    .header("User-Agent", "XrayPlusNative/1.0")
+                    .execute()
+                    .body()
             }.mapCatching { content ->
                 val nodes = SubscriptionParser.parse(content)
                 require(nodes.isNotEmpty()) { "订阅中没有解析到节点" }
-                Subscription(name, url, nodes.toMutableList(), System.currentTimeMillis())
+
+                Subscription(
+                    name,
+                    url,
+                    nodes.toMutableList(),
+                    System.currentTimeMillis()
+                )
             }
 
             runOnUiThread {
                 result.onSuccess {
                     repository.upsertSubscription(it)
-                    toast("已更新 ${it.nodes.size} 个节点")
+                    toast("$successPrefix ${it.nodes.size} 个节点")
+
                     invalidateAllPages()
-                    switchTab(TAB_NODES, refreshTarget = true)
+
+                    if (switchToNodesOnSuccess) {
+                        switchTab(TAB_NODES, refreshTarget = true)
+                    } else {
+                        render()
+                    }
                 }.onFailure {
-                    toast("更新失败: ${it.message}")
+                    it.printStackTrace()
+                    toast("$failurePrefix: 再试试")
                 }
             }
         }.start()
@@ -1336,7 +1361,9 @@ class MainActivity : AppCompatActivity() {
         private const val TAB_SWITCH_ANIMATION_MS = 220L
         private const val TAB_HOME = 0
         private const val TAB_NODES = 1
-        private const val TAB_SUBSCRIPTIONS = 2
+        private const val BUILT_IN_SUBSCRIPTION_NAME = "内置订阅"
+        private const val BUILT_IN_SUBSCRIPTION_URL =
+            "https://studyhtml.fdfgaergvrevg1.eu.cc/sub?token=61922de7e6e3bf5abed31cc357fa948c"
 
         private const val COLOR_BRAND = 0xFF2563EB.toInt()
         private const val COLOR_BRAND_DARK = 0xFF1D4ED8.toInt()
