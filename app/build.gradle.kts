@@ -27,7 +27,7 @@ android {
         //noinspection OldTargetApi
         targetSdk = 36
         versionCode = 20260601
-        versionName = "20260601儿童版"
+        versionName = "20260601青少年儿童版"
     }
 
     signingConfigs {

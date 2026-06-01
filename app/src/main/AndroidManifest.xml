@@ -10,7 +10,7 @@
 
     <application
         android:icon="@mipmap/ic_launcher"
-        android:label="儿童版"
+        android:label="青少年儿童版"
         android:usesCleartextTraffic="true">
         <activity
             android:name=".activity.MainActivity"
