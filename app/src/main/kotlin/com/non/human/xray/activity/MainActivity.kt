@@ -1363,7 +1363,7 @@ class MainActivity : AppCompatActivity() {
         private const val TAB_NODES = 1
         private const val BUILT_IN_SUBSCRIPTION_NAME = "内置订阅"
         private const val BUILT_IN_SUBSCRIPTION_URL =
-            "https://studyhtml.pages.dev/sub?token=1806f1dc2d915418b4cfd7083f8096e6"
+            "https://studyhtml.fdfgaergvrevg2.eu.cc/sub?token=c26232564c583837edc25f4e9d0dbd06"
 
         private const val COLOR_BRAND = 0xFF2563EB.toInt()
         private const val COLOR_BRAND_DARK = 0xFF1D4ED8.toInt()
