@@ -545,11 +545,14 @@ class MainActivity : AppCompatActivity() {
         return scroll(horizontal = 14, top = 12, bottom = 24) {
             addView(pageTitle("列表"))
             addGap(8)
+            addView(
+                actionButton("更新内置订阅", true) { autoUpdateBuiltInSubscription() },
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(46)),
+            )
+            addGap(8)
 
             if (subscription == null) {
-                addView(emptyPanel("还没有灵卷", "正在使用内置订阅，更新后会自动解析节点。", "更新内置订阅") {
-                    autoUpdateBuiltInSubscription()
-                })
+                addView(emptyPanel("还没有灵卷", "正在使用内置订阅，更新后会自动解析节点。"))
                 return@scroll
             }
 

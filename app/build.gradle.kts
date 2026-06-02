@@ -10,7 +10,6 @@ val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
-
 android {
     namespace = "com.non.human.xray"
     compileSdk = 37
@@ -26,8 +25,8 @@ android {
         minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 20260602
-        versionName = "20260602青少年儿童版"
+        versionCode = 20260603
+        versionName = "20260603青少年儿童版"
     }
 
     signingConfigs {
@@ -58,15 +57,24 @@ android {
     }
 
     splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "x86_64")
-            isUniversalApk = true
-        }
+//        abi {
+//            isEnable = true
+//            reset()
+//            include("arm64-v8a", "x86_64")
+//            isUniversalApk = true
+//        }
     }
 }
 
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            output.outputFileName.set(
+                "Xray-${android.defaultConfig.versionName}-${android.defaultConfig.versionCode}-${variant.name}.apk"
+            )
+        }
+    }
+}
 dependencies {
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.core:core-ktx:1.18.0")
