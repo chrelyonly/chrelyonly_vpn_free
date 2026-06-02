@@ -39,9 +39,20 @@ jobs:
         run: |
           mkdir -p release
 
-          APK=$(find . -name "*.apk" | head -n 1)
+          APK=$(
+            find \
+              "$GITHUB_WORKSPACE/../build/app/outputs/apk/release" \
+              "$GITHUB_WORKSPACE/build/app/outputs/apk/release" \
+              -name "*.apk" 2>/dev/null | head -n 1 || true
+          )
 
           echo "Found APK: $APK"
+
+          if [ -z "$APK" ]; then
+            echo "No release APK found. Available APK files:"
+            find "$GITHUB_WORKSPACE/.." -name "*.apk" -print
+            exit 1
+          fi
 
           cp "$APK" \
             "release/chrelyonly_vpn_free-${GITHUB_REF_NAME}.apk"
