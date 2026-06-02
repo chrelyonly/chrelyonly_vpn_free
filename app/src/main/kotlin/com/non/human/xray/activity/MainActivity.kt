@@ -993,28 +993,29 @@ class MainActivity : AppCompatActivity() {
         toast(startMessage)
 
         Thread {
-            val result = runCatching {
-                HttpRequest.get(url)
-                    .timeout(5000) // 连接+读取超时
+            try {
+                val content = HttpRequest.get(url)
+                    .timeout(10000)
                     .header("User-Agent", "XrayPlusNative/1.0")
                     .execute()
                     .body()
-            }.mapCatching { content ->
+
                 val nodes = SubscriptionParser.parse(content)
-                require(nodes.isNotEmpty()) { "订阅中没有解析到节点" }
 
-                Subscription(
-                    name,
-                    url,
-                    nodes.toMutableList(),
-                    System.currentTimeMillis()
+                if (nodes.isEmpty()) {
+                    throw RuntimeException("订阅中没有解析到节点")
+                }
+
+                val subscription = Subscription(
+                    name = name,
+                    url = url,
+                    nodes = nodes.toMutableList(),
                 )
-            }
 
-            runOnUiThread {
-                result.onSuccess {
-                    repository.upsertSubscription(it)
-                    toast("$successPrefix ${it.nodes.size} 个节点")
+                runOnUiThread {
+                    repository.upsertSubscription(subscription)
+
+                    toast("$successPrefix ${subscription.nodes.size} 个节点")
 
                     invalidateAllPages()
 
@@ -1023,9 +1024,13 @@ class MainActivity : AppCompatActivity() {
                     } else {
                         render()
                     }
-                }.onFailure {
-                    it.printStackTrace()
-                    toast("$failurePrefix: 再试试")
+                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+
+                runOnUiThread {
+                    toast("$failurePrefix: ${e.message ?: "再试试"}")
                 }
             }
         }.start()
