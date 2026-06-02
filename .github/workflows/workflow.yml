@@ -39,10 +39,12 @@ jobs:
         run: |
           mkdir -p release
 
-          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          APK=$(find . -name "*.apk" | head -n 1)
+
+          echo "Found APK: $APK"
 
           cp "$APK" \
-          "release/chrelyonly_vpn_free-${GITHUB_REF_NAME}.apk"
+            "release/chrelyonly_vpn_free-${GITHUB_REF_NAME}.apk"
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
