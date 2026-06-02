@@ -1,0 +1,78 @@
+name: 打包安卓
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  APP_NAME: chrelyonly_vpn_free
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 拉代码
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # JDK
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Gradle缓存
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # 授权 gradlew
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      # 打包 Release APK
+      - name: Build APK
+        run: ./gradlew assembleRelease
+
+      # 重命名
+      - name: Rename APK
+        run: |
+          mkdir -p release
+
+          APK=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+
+          VERSION=${GITHUB_REF_NAME}
+
+          cp "$APK" \
+          "release/${APP_NAME}-${VERSION}.apk"
+
+      # 上传构建产物
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: release/*.apk
+
+  release:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: |
+            release/**/*.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
