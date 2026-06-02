@@ -32,12 +32,14 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import cn.hutool.http.HttpRequest
 import com.non.human.xray.data.OutboundNode
 import com.non.human.xray.data.Subscription
 import com.non.human.xray.parser.SubscriptionParser
 import com.non.human.xray.service.XrayVpnService
 import com.non.human.xray.store.AppRepository
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var repository: AppRepository
@@ -997,12 +999,19 @@ class MainActivity : AppCompatActivity() {
 
         Thread {
             try {
-                val content = HttpRequest.get(url)
-                    .timeout(10000)
-                    .header("User-Agent", "XrayPlusNative/1.0")
-                    .execute()
-                    .body()
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(10, TimeUnit.SECONDS)
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .build()
 
+                val request = Request.Builder()
+                    .url(url)
+                    .header("User-Agent", "XrayPlusNative/1.0")
+                    .build()
+
+                val content = client.newCall(request)
+                    .execute().body?.string()
+                    ?: throw RuntimeException("响应为空")
                 val nodes = SubscriptionParser.parse(content)
 
                 if (nodes.isEmpty()) {
