@@ -25,8 +25,8 @@ android {
         minSdk = 26
         //noinspection OldTargetApi
         targetSdk = 36
-        versionCode = 20260604
-        versionName = "20260604青少年儿童版"
+        versionCode = 20260605
+        versionName = "20260605青少年儿童版"
     }
 
     signingConfigs {

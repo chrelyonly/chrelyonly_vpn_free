@@ -9,16 +9,17 @@ import android.os.Handler
 import android.os.Looper
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import cn.hutool.http.HttpRequest
 import com.non.human.xray.core.common.CommonUtils
 import com.non.human.xray.core.core.CoreProcessManager
 import com.non.human.xray.core.vpn.TunManager
 import com.non.human.xray.core.vpn.VpnManager
 import com.non.human.xray.core.xray.XrayConfigBuilder
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.io.File
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
+import java.net.InetSocketAddress
+import java.net.Proxy
+import java.util.concurrent.TimeUnit
 
 /**
  * xray核心接口
@@ -141,13 +142,21 @@ class XrayVpnService : VpnService() {
             try {
                 // 开始时间
                 val start = System.currentTimeMillis()
-
+                val proxy = Proxy(
+                    Proxy.Type.SOCKS,
+                    InetSocketAddress("127.0.0.1", 10808)
+                )
                 // 发起请求
-                val response = HttpRequest
-                    .get("https://www.google.com/generate_204")
-                    // 连接超时（建立TCP连接）
-                    .setConnectionTimeout(2000)
-                    .setHttpProxy("127.0.0.1",10808)
+                val client = OkHttpClient.Builder()
+                    .proxy(proxy)
+                    .connectTimeout(6, TimeUnit.SECONDS)
+                    .readTimeout(6, TimeUnit.SECONDS)
+                    .build()
+                val request = Request.Builder()
+                    .url("https://www.google.com/generate_204")
+                    .header("User-Agent", "XrayPlusNative/1.0")
+                    .build()
+                client.newCall(request)
                     .execute()
                 // 结束时间
                 val end = System.currentTimeMillis()
@@ -155,31 +164,6 @@ class XrayVpnService : VpnService() {
                 val cost = end - start
                 // 拼接结果字符串
                 connectMsg = """访问谷歌耗时: $cost ms""".trimIndent()
-
-            } catch (e: UnknownHostException) {
-
-                connectMsg = """
-            连接失败
-            原因: DNS解析失败
-            错误信息: ${e.message}
-        """.trimIndent()
-
-            } catch (e: SocketTimeoutException) {
-
-                connectMsg = """
-            连接失败
-            原因: 连接超时或读取超时
-            错误信息: ${e.message}
-        """.trimIndent()
-
-            } catch (e: ConnectException) {
-
-                connectMsg = """
-            连接失败
-            原因: 无法连接服务器
-            错误信息: ${e.message}
-        """.trimIndent()
-
             } catch (e: Exception) {
 
                 connectMsg = """
